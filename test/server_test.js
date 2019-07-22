@@ -5,6 +5,7 @@ const expect = chai.expect;
 const should = chai.should();
 const request = require('supertest');
 const crypto = require('crypto');
+const bcrypt = require('bcrypt');
 
 const server = require('../server');
 const baseUrl = 'http://localhost:3000';
@@ -41,7 +42,7 @@ describe('server', () => {
     it('POST request to /messsage with message data returns message id', (done) => {
       request(baseUrl)
         .post('/message')
-        .send({message: "This is a test message."})
+        .send({id: 1, message: "This is a test message."})
         .expect(200)
         .expect('Content-Type', 'application/json; charset=utf-8')
         .end((error, response) => {
@@ -99,10 +100,17 @@ describe('server', () => {
             done(error);
             return;
           }
-          let result = JSON.parse(decrypt(response.text));
-          result.should.be.a('object');
-          result.should.eql({id: 1, message: "This is a test message."});
-          done();
+          bcrypt.compare(
+            '{"id":1,"message":"This is a test message."}',
+            response.text,
+            (error, response) => {
+              if (error) {
+                return done(error);
+              }
+              response.should.eql(false);
+              done();
+            }
+          );
         });
     });
 
@@ -116,10 +124,17 @@ describe('server', () => {
             done(error);
             return;
           }
-          let result = JSON.parse(decrypt(response.text));
-          result.should.be.a('Array');
-          result.should.eql([{id:1, message: "This is a test message."}]);
-          done();
+          bcrypt.compare(
+            'blah',
+            response.text,
+            (error, response) => {
+              if (error) {
+                return done(error);
+              }
+              response.should.eql(false);
+              done();
+            }
+          )
         });
     });
 
